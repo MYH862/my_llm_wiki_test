@@ -17,29 +17,24 @@
   - [x] SubTask 3.1: 实现用户注册 API（密码 bcrypt 哈希）
   - [x] SubTask 3.2: 实现用户登录 API（JWT 令牌生成）
   - [x] SubTask 3.3: 实现 JWT 中间件（令牌验证、刷新）
-  - [x] SubTask 3.4: 实现密码重置功能
+  - [ ] SubTask 3.4: 实现密码重置功能（仅标记，暂未实现）
 
-- [x] Task 4: 实现权限控制系统（RBAC）
+- [ ] Task 4: 实现权限控制系统（RBAC）
   - [x] SubTask 4.1: 实现角色和权限数据模型
-  - [x] SubTask 4.2: 实现权限检查中间件
-  - [x] SubTask 4.3: 实现项目级别权限管理 API
-  - [x] SubTask 4.4: 实现用户管理 API（仅管理员）
+  - [x] SubTask 4.2: 实现权限检查中间件（permission.rs 基础函数）
+  - [ ] SubTask 4.3: 实现项目级别权限管理 API（需实现 API 路由和处理函数）
+  - [ ] SubTask 4.4: 实现用户管理 API（需实现 users.rs API 路由和处理函数）
 
 ## Phase 2: 核心业务 API 迁移
 
-- [x] Task 5: 迁移文件操作 API
-  - [x] SubTask 5.1: 实现 MinIO 文件服务
-  - [x] SubTask 5.2: 实现文件读取 API
-  - [x] SubTask 5.3: 实现文件写入 API
-  - [x] SubTask 5.4: 实现目录列表 API
-  - [x] SubTask 5.5: 实现文件删除 API
-  - [x] SubTask 5.6: 实现文件复制 API
-  - [ ] SubTask 5.1: 实现文件读取 API
-  - [ ] SubTask 5.2: 实现文件写入 API
-  - [ ] SubTask 5.3: 实现目录列表 API
-  - [ ] SubTask 5.4: 实现文件删除 API
-  - [ ] SubTask 5.5: 实现文件复制 API
-  - [ ] SubTask 5.6: 实现文档预处理 API（PDF, DOCX, PPTX, XLSX）
+- [ ] Task 5: 迁移文件操作 API
+  - [ ] SubTask 5.1: 实现 MinIO 文件服务（已有基础代码，需验证和补全）
+  - [ ] SubTask 5.2: 实现文件读取 API（已有实现，需验证）
+  - [ ] SubTask 5.3: 实现文件写入 API（已有实现，需验证）
+  - [ ] SubTask 5.4: 实现目录列表 API（已有实现，需验证）
+  - [ ] SubTask 5.5: 实现文件删除 API（已有实现，需验证）
+  - [ ] SubTask 5.6: 实现文件复制 API（已有实现，需验证）
+  - [ ] SubTask 5.7: 实现文档预处理 API（PDF, DOCX, PPTX, XLSX）
 
 - [ ] Task 6: 迁移项目管理 API
   - [ ] SubTask 6.1: 实现创建项目 API
@@ -54,7 +49,7 @@
   - [ ] SubTask 7.4: 实现 LLM 配置管理 API
 
 - [ ] Task 8: 迁移向量搜索服务
-  - [ ] SubTask 8.1: 集成 LanceDB 服务端模式
+  - [ ] SubTask 8.1: 集成 Qdrant 服务（Docker 部署 + Rust 客户端）
   - [ ] SubTask 8.2: 实现向量嵌入 API
   - [ ] SubTask 8.3: 实现向量搜索 API
   - [ ] SubTask 8.4: 实现向量 Upsert/Delete API
@@ -72,10 +67,11 @@
 
 ## Phase 3: 前端改造
 
-- [ ] Task 11: 移除 Tauri 依赖
-  - [ ] SubTask 11.1: 移除 `src-tauri/` 目录
-  - [ ] SubTask 11.2: 更新 `package.json` 移除 Tauri 相关依赖
-  - [ ] SubTask 11.3: 更新构建配置（Vite 配置）
+- [ ] Task 11: 改造 Tauri 容器（保留 WebView，移除后端代码）
+  - [ ] SubTask 11.1: 移除 `src-tauri/src/commands/` 目录（Tauri 命令处理代码）
+  - [ ] SubTask 11.2: 移除 `src-tauri/src/clip_server.rs` 等后端服务代码
+  - [ ] SubTask 11.3: 清理 `src-tauri/Cargo.toml` 移除不必要的后端依赖
+  - [ ] SubTask 11.4: 验证 Tauri 构建仍然可用（`cargo tauri dev`）
 
 - [ ] Task 12: 实现 API 客户端层
   - [ ] SubTask 12.1: 创建 HTTP 客户端封装（Axios 实例）
@@ -103,34 +99,43 @@
   - [ ] SubTask 15.3: 创建项目管理页面（成员管理、角色分配）
   - [ ] SubTask 15.4: 创建用户管理页面（仅管理员可见）
 
-## Phase 4: 网页剪辑器和部署
+## Phase 4: 数据迁移
 
-- [ ] Task 16: 改造 Chrome 网页剪辑器
-  - [ ] SubTask 16.1: 更新扩展 manifest 配置
-  - [ ] SubTask 16.2: 修改为调用云端 API
-  - [ ] SubTask 16.3: 实现用户认证令牌传递
-  - [ ] SubTask 16.4: 实现项目选择器（从服务端获取）
+- [ ] Task 16: 数据迁移工具
+  - [ ] SubTask 16.1: 实现本地文件批量上传到 MinIO 脚本
+  - [ ] SubTask 16.2: 实现 LanceDB 向量数据导出脚本
+  - [ ] SubTask 16.3: 实现 Qdrant 向量导入脚本
+  - [ ] SubTask 16.4: 实现 Tauri Store 配置导出/导入工具
+  - [ ] SubTask 16.5: 迁移验证（文件完整性、向量可用性）
 
-- [ ] Task 17: 配置部署和 CI/CD
-  - [ ] SubTask 17.1: 完善 Docker Compose 配置
-  - [ ] SubTask 17.2: 配置环境变量管理
-  - [ ] SubTask 17.3: 更新 GitHub Actions CI/CD
-  - [ ] SubTask 17.4: 编写部署文档
+## Phase 5: 网页剪辑器和部署
 
-## Phase 5: 测试和优化
+- [ ] Task 17: 改造 Chrome 网页剪辑器
+  - [ ] SubTask 17.1: 更新扩展 manifest 配置
+  - [ ] SubTask 17.2: 修改为调用云端 API
+  - [ ] SubTask 17.3: 实现用户认证令牌传递
+  - [ ] SubTask 17.4: 实现项目选择器（从服务端获取）
 
-- [ ] Task 18: 编写测试
-  - [ ] SubTask 18.1: 后端 API 单元测试
-  - [ ] SubTask 18.2: 后端集成测试
-  - [ ] SubTask 18.3: 前端组件测试
-  - [ ] SubTask 18.4: 端到端测试
+- [ ] Task 18: 配置部署和 CI/CD
+  - [ ] SubTask 18.1: 完善 Docker Compose 配置
+  - [ ] SubTask 18.2: 配置环境变量管理
+  - [ ] SubTask 18.3: 更新 GitHub Actions CI/CD
+  - [ ] SubTask 18.4: 编写部署文档
 
-- [ ] Task 19: 性能优化和安全加固
-  - [ ] SubTask 19.1: 实现 API 速率限制
-  - [ ] SubTask 19.2: 实现请求日志和监控
-  - [ ] SubTask 19.3: 优化数据库查询
-  - [ ] SubTask 19.4: 实现 CORS 配置
-  - [ ] SubTask 19.5: 安全审计（SQL 注入、XSS 等）
+## Phase 6: 测试和优化
+
+- [ ] Task 19: 编写测试
+  - [ ] SubTask 19.1: 后端 API 单元测试
+  - [ ] SubTask 19.2: 后端集成测试
+  - [ ] SubTask 19.3: 前端组件测试
+  - [ ] SubTask 19.4: 端到端测试
+
+- [ ] Task 20: 性能优化和安全加固
+  - [ ] SubTask 20.1: 实现 API 速率限制
+  - [ ] SubTask 20.2: 实现请求日志和监控
+  - [ ] SubTask 20.3: 优化数据库查询
+  - [ ] SubTask 20.4: 实现 CORS 配置
+  - [ ] SubTask 20.5: 安全审计（SQL 注入、XSS 等）
 
 # Task Dependencies
 
@@ -143,19 +148,21 @@
 - [Task 8] depends on [Task 4]
 - [Task 9] depends on [Task 7]
 - [Task 10] depends on [Task 7]
-- [Task 11] depends on [Task 5, Task 6, Task 7, Task 8, Task 9, Task 10]
-- [Task 12] depends on [Task 11]
+- [Task 11] depends on [Task 5]  # 前端改造只需依赖文件 API，可与其他后端任务并行
+- [Task 12] depends on [Task 3, Task 11]  # API 客户端层依赖认证 API 和 Tauri 清理
 - [Task 13] depends on [Task 12]
 - [Task 14] depends on [Task 12, Task 13]
 - [Task 15] depends on [Task 14]
-- [Task 16] depends on [Task 7]
-- [Task 17] depends on [Task 15]
-- [Task 18] depends on [Task 15, Task 16]
-- [Task 19] depends on [Task 18]
+- [Task 16] depends on [Task 5, Task 8]  # 数据迁移依赖文件和向量服务
+- [Task 17] depends on [Task 7]
+- [Task 18] depends on [Task 15]
+- [Task 19] depends on [Task 15, Task 17, Task 16]
+- [Task 20] depends on [Task 19]
 
 # 并行执行建议
 
 以下任务可以并行执行：
 - Task 5, 6, 7, 8, 9, 10 可以并行（在 Task 4 完成后）
-- Task 11, 12, 13 可以部分并行
-- Task 18 的各个子任务可以并行
+- Task 11, 12, 13 可以并行（后端任务进行时可开始前端改造）
+- Task 19 的各个子任务可以并行
+- Task 16 可与 Task 17, 18 并行
