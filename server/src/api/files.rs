@@ -6,12 +6,52 @@ use axum::{
 };
 use serde::Deserialize;
 use uuid::Uuid;
+use std::io::Cursor;
 
 use crate::config::AppState;
 use crate::middleware::auth::Claims;
 use crate::middleware::error::AppError;
 use crate::middleware::permission::check_project_permission;
 use crate::models::file::{FileInfo, DirectoryEntry, FileContent, DocumentPreprocessResponse};
+
+fn extract_pdf_text(content: &[u8]) -> Result<String, AppError> {
+    let doc = lopdf::Document::load_from(Cursor::new(content))
+        .map_err(|e| AppError::BadRequest(format!("Failed to parse PDF: {}", e)))?;
+
+    let mut text = String::new();
+    for page in doc.get_pages() {
+        let page_number = page.0;
+        if let Ok(page_text) = doc.extract_text(&[page_number]) {
+            text.push_str(&page_text);
+            text.push_str("\n\n");
+        }
+    }
+
+    Ok(text)
+}
+
+fn extract_excel_text(content: &[u8]) -> Result<String, AppError> {
+    let mut workbook = calamine::Xlsx::<Cursor<&[u8]>>::new(Cursor::new(content))
+        .map_err(|e| AppError::BadRequest(format!("Failed to parse Excel: {}", e)))?;
+
+    let mut text = String::new();
+    for sheet_name in workbook.sheet_names() {
+        if let Ok(range) = workbook.worksheet_range(&sheet_name) {
+            text.push_str(&format!("## Sheet: {}\n\n", sheet_name));
+            for row in range.rows() {
+                let row_text: Vec<String> = row
+                    .iter()
+                    .map(|cell| cell.to_string())
+                    .collect();
+                text.push_str(&row_text.join("\t"));
+                text.push_str("\n");
+            }
+            text.push_str("\n");
+        }
+    }
+
+    Ok(text)
+}
 
 #[derive(Deserialize)]
 pub struct ListQuery {
@@ -189,7 +229,16 @@ pub async fn preprocess_document(
         return Err(AppError::BadRequest("Unsupported file format".to_string()));
     };
 
-    let markdown_content = String::from_utf8(content).map_err(|e| AppError::BadRequest(e.to_string()))?;
+    let markdown_content = match content_type {
+        "application/pdf" => {
+            extract_pdf_text(&content)?
+        }
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" | 
+        "application/vnd.ms-excel" => {
+            extract_excel_text(&content)?
+        }
+        _ => String::from_utf8(content).map_err(|e| AppError::BadRequest(e.to_string()))?,
+    };
 
     Ok(Json(DocumentPreprocessResponse {
         original_path: query.path,
