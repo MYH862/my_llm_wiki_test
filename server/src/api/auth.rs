@@ -1,15 +1,26 @@
 use axum::{
     extract::State,
     http::StatusCode,
-    Json,
+    routing::{get, post, put},
+    Json, Router,
 };
 use serde::Deserialize;
 use validator::Validate;
 
 use crate::config::AppState;
+use crate::middleware::auth::Claims;
 use crate::middleware::error::AppError;
-use crate::models::user::CreateUserRequest;
+use crate::models::user::{CreateUserRequest, ChangePasswordRequest};
 use crate::services::auth;
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/register", post(register))
+        .route("/login", post(login))
+        .route("/refresh", post(refresh))
+        .route("/logout", post(logout))
+        .route("/password", put(change_password))
+}
 
 #[derive(Deserialize, Validate)]
 pub struct LoginRequest {
@@ -103,5 +114,21 @@ pub async fn logout(
     Json(req): Json<LogoutRequest>,
 ) -> Result<StatusCode, AppError> {
     auth::logout(&state.db, &req.refresh_token).await?;
+    Ok(StatusCode::OK)
+}
+
+pub async fn change_password(
+    State(state): State<AppState>,
+    claims: axum::extract::Extension<Claims>,
+    Json(req): Json<ChangePasswordRequest>,
+) -> Result<StatusCode, AppError> {
+    auth::change_password(
+        &state.db,
+        claims.0.sub,
+        &req.current_password,
+        &req.new_password,
+    )
+    .await?;
+
     Ok(StatusCode::OK)
 }

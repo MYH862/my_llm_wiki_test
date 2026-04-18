@@ -38,3 +38,8 @@ pub struct ChangePasswordRequest {
     pub current_password: String,
     pub new_password: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResetPasswordRequest {
+    pub email: String,
+}

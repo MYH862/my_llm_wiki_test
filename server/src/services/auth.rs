@@ -174,3 +174,41 @@ pub async fn logout(pool: &PgPool, token: &str) -> Result<(), AppError> {
 
     Ok(())
 }
+
+pub async fn change_password(
+    pool: &PgPool,
+    user_id: Uuid,
+    current_password: &str,
+    new_password: &str,
+) -> Result<(), AppError> {
+    let user = sqlx::query_as::<_, crate::models::user::User>(
+        "SELECT * FROM users WHERE id = $1 AND is_active = true"
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| AppError::Internal)?;
+
+    let user = user.ok_or_else(|| AppError::Auth("User not found".to_string()))?;
+
+    let valid = bcrypt::verify(current_password, &user.password_hash)
+        .map_err(|_| AppError::Internal)?;
+
+    if !valid {
+        return Err(AppError::Auth("Current password is incorrect".to_string()));
+    }
+
+    let new_password_hash = bcrypt::hash(new_password, bcrypt::DEFAULT_COST)
+        .map_err(|_| AppError::Internal)?;
+
+    sqlx::query!(
+        "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
+        new_password_hash,
+        user_id
+    )
+    .execute(pool)
+    .await
+    .map_err(|_| AppError::Internal)?;
+
+    Ok(())
+}

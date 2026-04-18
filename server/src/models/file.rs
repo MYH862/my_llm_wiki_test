@@ -21,3 +21,11 @@ pub struct FileContent {
     pub content: String,
     pub content_type: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DocumentPreprocessResponse {
+    pub original_path: String,
+    pub content_type: String,
+    pub markdown_content: String,
+    pub page_count: Option<u32>,
+}

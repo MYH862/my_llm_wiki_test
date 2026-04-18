@@ -1,7 +1,8 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
+    Json, Router,
+    routing::{get, post, delete},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -10,7 +11,17 @@ use crate::config::AppState;
 use crate::middleware::auth::Claims;
 use crate::middleware::error::AppError;
 use crate::middleware::permission::check_project_permission;
-use crate::models::file::{FileInfo, DirectoryEntry, FileContent};
+use crate::models::file::{FileInfo, DirectoryEntry, FileContent, DocumentPreprocessResponse};
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/:project_id/list", get(list_files))
+        .route("/:project_id/read", get(read_file))
+        .route("/:project_id/write", post(write_file))
+        .route("/:project_id/delete", delete(delete_file))
+        .route("/:project_id/copy", post(copy_file))
+        .route("/:project_id/preprocess", get(preprocess_document))
+}
 
 #[derive(Deserialize)]
 pub struct ListQuery {
@@ -147,6 +158,58 @@ pub async fn write_file(
         .await?;
 
     Ok(StatusCode::OK)
+}
+
+pub async fn preprocess_document(
+    State(state): State<AppState>,
+    claims: axum::extract::Extension<Claims>,
+    Path(project_id): Path<Uuid>,
+    Query(query): Query<ReadQuery>,
+) -> Result<Json<DocumentPreprocessResponse>, AppError> {
+    check_project_permission(
+        &state.db,
+        claims.0.sub,
+        project_id,
+        "files:read",
+    )
+    .await
+    .map_err(|_| AppError::PermissionDenied)?;
+
+    let content = state.minio.download_file(&project_id.to_string(), &query.path).await?;
+    
+    let content_type = if query.path.ends_with(".pdf") {
+        "application/pdf"
+    } else if query.path.ends_with(".docx") {
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    } else if query.path.ends_with(".pptx") {
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    } else if query.path.ends_with(".xlsx") || query.path.ends_with(".xls") {
+        "application/vnd.ms-excel"
+    } else {
+        return Err(AppError::BadRequest("Unsupported file format".to_string()));
+    };
+
+    let markdown_content = match content_type {
+        "application/pdf" => {
+            let temp_path = format!("/tmp/{}", query.path.split('/').last().unwrap_or("temp.pdf"));
+            std::fs::write(&temp_path, &content).map_err(|e| AppError::Internal)?;
+            
+            let config = pdf_extract::OutputConfig::default();
+            let output = pdf_extract::extract_text_to_string(&temp_path, &config)
+                .map_err(|e| AppError::BadRequest(format!("PDF extraction failed: {}", e)))?;
+            
+            std::fs::remove_file(&temp_path).ok();
+            output
+        }
+        _ => String::from_utf8(content).map_err(|e| AppError::BadRequest(e.to_string()))?,
+    };
+
+    Ok(Json(DocumentPreprocessResponse {
+        original_path: query.path,
+        content_type: content_type.to_string(),
+        markdown_content,
+        page_count: None,
+    }))
 }
 
 pub async fn delete_file(
