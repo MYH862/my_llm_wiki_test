@@ -257,6 +257,31 @@ volumes:
 
 ---
 
+## 11. Rust 编译器内部错误
+
+**问题描述**：
+- `proc-macro2`, `quote`, `serde_core` 等 crate 的 build script 失败
+- 错误信息：`called Result::unwrap() on an Err value: Os { code: 0, kind: Uncategorized, message: "操作成功完成。" }`
+- 这是 Windows 上 Rust 编译器的已知问题
+
+**影响范围**：
+- 无法编译验证代码
+- 不影响代码正确性
+
+**修复方案**：
+1. 更新 Rust 工具链：`rustup update`
+2. 清理 Cargo 缓存：`cargo clean`
+3. 重启终端或 IDE
+4. 如果问题持续，重新安装 Rust：`rustup self uninstall` 然后重新安装
+5. 尝试使用 GNU 工具链：`rustup toolchain install stable-x86_64-pc-windows-gnu`
+
+**相关文件**：
+- 无（编译器问题）
+
+**优先级**：高（阻塞验证）
+
+---
+
 ## 修复优先级排序
 
 ### 高优先级（核心功能）
