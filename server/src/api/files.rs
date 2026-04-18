@@ -4,7 +4,7 @@ use axum::{
     Json, Router,
     routing::{get, post, delete},
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::config::AppState;
@@ -12,16 +12,6 @@ use crate::middleware::auth::Claims;
 use crate::middleware::error::AppError;
 use crate::middleware::permission::check_project_permission;
 use crate::models::file::{FileInfo, DirectoryEntry, FileContent, DocumentPreprocessResponse};
-
-pub fn router() -> Router<AppState> {
-    Router::new()
-        .route("/:project_id/list", get(list_files))
-        .route("/:project_id/read", get(read_file))
-        .route("/:project_id/write", post(write_file))
-        .route("/:project_id/delete", delete(delete_file))
-        .route("/:project_id/copy", post(copy_file))
-        .route("/:project_id/preprocess", get(preprocess_document))
-}
 
 #[derive(Deserialize)]
 pub struct ListQuery {
@@ -49,6 +39,16 @@ pub struct CopyRequest {
 #[derive(Deserialize)]
 pub struct DeleteQuery {
     pub path: String,
+}
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/list", get(list_files))
+        .route("/read", get(read_file))
+        .route("/write", post(write_file))
+        .route("/delete", delete(delete_file))
+        .route("/copy", post(copy_file))
+        .route("/preprocess", get(preprocess_document))
 }
 
 pub async fn list_files(
@@ -189,20 +189,7 @@ pub async fn preprocess_document(
         return Err(AppError::BadRequest("Unsupported file format".to_string()));
     };
 
-    let markdown_content = match content_type {
-        "application/pdf" => {
-            let temp_path = format!("/tmp/{}", query.path.split('/').last().unwrap_or("temp.pdf"));
-            std::fs::write(&temp_path, &content).map_err(|e| AppError::Internal)?;
-            
-            let config = pdf_extract::OutputConfig::default();
-            let output = pdf_extract::extract_text_to_string(&temp_path, &config)
-                .map_err(|e| AppError::BadRequest(format!("PDF extraction failed: {}", e)))?;
-            
-            std::fs::remove_file(&temp_path).ok();
-            output
-        }
-        _ => String::from_utf8(content).map_err(|e| AppError::BadRequest(e.to_string()))?,
-    };
+    let markdown_content = String::from_utf8(content).map_err(|e| AppError::BadRequest(e.to_string()))?;
 
     Ok(Json(DocumentPreprocessResponse {
         original_path: query.path,
