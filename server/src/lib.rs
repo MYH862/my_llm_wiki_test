@@ -11,6 +11,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 use crate::config::{AppState, AppStateInner, Config};
+use crate::services::file::MinIOService;
 
 pub async fn create_app(state: AppState) -> Router {
     let cors = CorsLayer::new()
@@ -54,5 +55,14 @@ pub async fn create_state(config: Config) -> AppState {
     let db = db::connection::create_pool(&config.database.url, config.database.max_connections).await;
     db::connection::run_migrations(&db).await;
 
-    std::sync::Arc::new(AppStateInner { config, db })
+    let minio = MinIOService::new(
+        &config.minio.endpoint,
+        &config.minio.access_key,
+        &config.minio.secret_key,
+        config.minio.use_ssl,
+        &config.minio.bucket_prefix,
+    )
+    .expect("Failed to initialize MinIO service");
+
+    std::sync::Arc::new(AppStateInner { config, db, minio })
 }

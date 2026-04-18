@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::sync::Arc;
+use crate::services::file::MinIOService;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -9,6 +10,16 @@ pub struct Config {
     pub cors: CorsConfig,
     pub llm: LlmConfig,
     pub storage: StorageConfig,
+    pub minio: MinIOConfig,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct MinIOConfig {
+    pub endpoint: String,
+    pub access_key: String,
+    pub secret_key: String,
+    pub use_ssl: bool,
+    pub bucket_prefix: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -95,6 +106,20 @@ impl Config {
                 vector_db_path: std::env::var("VECTOR_DB_PATH")
                     .unwrap_or_else(|_| "/data/vectors".to_string()),
             },
+            minio: MinIOConfig {
+                endpoint: std::env::var("MINIO_ENDPOINT")
+                    .unwrap_or_else(|_| "localhost:9000".to_string()),
+                access_key: std::env::var("MINIO_ACCESS_KEY")
+                    .unwrap_or_else(|_| "minioadmin".to_string()),
+                secret_key: std::env::var("MINIO_SECRET_KEY")
+                    .unwrap_or_else(|_| "minioadmin".to_string()),
+                use_ssl: std::env::var("MINIO_USE_SSL")
+                    .ok()
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(false),
+                bucket_prefix: std::env::var("MINIO_BUCKET_PREFIX")
+                    .unwrap_or_else(|_| "llm-wiki".to_string()),
+            },
         }
     }
 
@@ -112,4 +137,5 @@ pub type AppState = Arc<AppStateInner>;
 pub struct AppStateInner {
     pub config: Config,
     pub db: sqlx::PgPool,
+    pub minio: MinIOService,
 }

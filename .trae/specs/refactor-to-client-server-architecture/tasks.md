@@ -19,15 +19,21 @@
   - [x] SubTask 3.3: 实现 JWT 中间件（令牌验证、刷新）
   - [x] SubTask 3.4: 实现密码重置功能
 
-- [ ] Task 4: 实现权限控制系统（RBAC）
-  - [ ] SubTask 4.1: 实现角色和权限数据模型
-  - [ ] SubTask 4.2: 实现权限检查中间件
-  - [ ] SubTask 4.3: 实现项目级别权限管理 API
-  - [ ] SubTask 4.4: 实现用户管理 API（仅管理员）
+- [x] Task 4: 实现权限控制系统（RBAC）
+  - [x] SubTask 4.1: 实现角色和权限数据模型
+  - [x] SubTask 4.2: 实现权限检查中间件
+  - [x] SubTask 4.3: 实现项目级别权限管理 API
+  - [x] SubTask 4.4: 实现用户管理 API（仅管理员）
 
 ## Phase 2: 核心业务 API 迁移
 
-- [ ] Task 5: 迁移文件操作 API
+- [x] Task 5: 迁移文件操作 API
+  - [x] SubTask 5.1: 实现 MinIO 文件服务
+  - [x] SubTask 5.2: 实现文件读取 API
+  - [x] SubTask 5.3: 实现文件写入 API
+  - [x] SubTask 5.4: 实现目录列表 API
+  - [x] SubTask 5.5: 实现文件删除 API
+  - [x] SubTask 5.6: 实现文件复制 API
   - [ ] SubTask 5.1: 实现文件读取 API
   - [ ] SubTask 5.2: 实现文件写入 API
   - [ ] SubTask 5.3: 实现目录列表 API
