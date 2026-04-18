@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: llm_wiki
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/llm_wiki
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 3000
+      ALLOWED_ORIGINS: http://localhost:5173
+      FILE_STORAGE_PATH: /data/wiki
+      VECTOR_DB_PATH: /data/vectors
+    volumes:
+      - wiki_data:/data/wiki
+      - vector_data:/data/vectors
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000
+    depends_on:
+      - server
+
+volumes:
+  postgres_data:
+  wiki_data:
+  vector_data:
