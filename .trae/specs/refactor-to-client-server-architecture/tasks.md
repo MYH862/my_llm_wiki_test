@@ -48,22 +48,22 @@
   - [x] SubTask 7.3: 实现持久化导入队列服务
   - [x] SubTask 7.4: 实现 LLM 配置管理 API
 
-- [ ] Task 8: 迁移向量搜索服务
-  - [ ] SubTask 8.1: 集成 Qdrant 服务（Docker 部署 + Rust 客户端）
-  - [ ] SubTask 8.2: 实现向量嵌入 API
-  - [ ] SubTask 8.3: 实现向量搜索 API
-  - [ ] SubTask 8.4: 实现向量 Upsert/Delete API
+- [x] Task 8: 迁移向量搜索服务
+  - [x] SubTask 8.1: 集成 Qdrant 服务（Docker 部署 + Rust 客户端）
+  - [x] SubTask 8.2: 实现向量嵌入 API
+  - [x] SubTask 8.3: 实现向量搜索 API
+  - [x] SubTask 8.4: 实现向量 Upsert/Delete API
 
-- [ ] Task 9: 迁移知识图谱服务
-  - [ ] SubTask 9.1: 实现图谱构建 API
-  - [ ] SubTask 9.2: 实现 Louvain 社区检测 API
-  - [ ] SubTask 9.3: 实现图谱洞察 API
+- [x] Task 9: 迁移知识图谱服务
+  - [x] SubTask 9.1: 实现图谱构建 API
+  - [x] SubTask 9.2: 实现 Louvain 社区检测 API
+  - [x] SubTask 9.3: 实现图谱洞察 API
 
-- [ ] Task 10: 迁移深度研究和审核系统
-  - [ ] SubTask 10.1: 实现 Web 搜索 API（Tavily 集成）
-  - [ ] SubTask 10.2: 实现深度研究任务队列
-  - [ ] SubTask 10.3: 实现审核项 CRUD API
-  - [ ] SubTask 10.4: 实现 Lint 检查 API
+- [x] Task 10: 迁移深度研究和审核系统
+  - [x] SubTask 10.1: 实现 Web 搜索 API（Tavily 集成）
+  - [x] SubTask 10.2: 实现深度研究任务队列
+  - [x] SubTask 10.3: 实现审核项 CRUD API
+  - [x] SubTask 10.4: 实现 Lint 检查 API
 
 ## Phase 3: 前端改造
 

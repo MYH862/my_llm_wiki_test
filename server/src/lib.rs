@@ -12,6 +12,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::config::{AppState, AppStateInner, Config};
 use crate::services::file::MinIOService;
+use crate::services::vector::QdrantService;
 
 pub async fn create_app(state: AppState) -> Router {
     let cors = CorsLayer::new()
@@ -65,5 +66,13 @@ pub async fn create_state(config: Config) -> AppState {
     )
     .expect("Failed to initialize MinIO service");
 
-    std::sync::Arc::new(AppStateInner { config, db, minio })
+    let qdrant = QdrantService::new(
+        &config.qdrant.url,
+        &config.qdrant.api_key,
+        &config.qdrant.collection_prefix,
+        config.qdrant.vector_size,
+    )
+    .expect("Failed to initialize Qdrant service");
+
+    std::sync::Arc::new(AppStateInner { config, db, minio, qdrant })
 }

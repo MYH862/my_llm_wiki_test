@@ -1,34 +1,35 @@
 # Checklist
 
 ## 后端服务基础架构
-- [ ] 独立 Rust Web 服务项目已创建并可以启动
-- [ ] 数据库 Schema 已设计并实现迁移
-- [ ] 用户注册 API 可以正常工作
-- [ ] 用户登录 API 返回 JWT 令牌
-- [ ] JWT 中间件正确验证令牌
-- [ ] 令牌刷新机制正常工作
-- [ ] RBAC 权限控制系统已实现
-- [ ] 项目级别权限管理 API 正常工作
-- [ ] users API 正常工作（列表/详情/更新/删除）
-- [ ] projects API 正常工作（CRUD + 成员管理）
-- [ ] Docker Compose 配置可以启动所有服务
-- [ ] PostgreSQL 服务正常并可连接
+- [x] 独立 Rust Web 服务项目已创建并可以启动
+- [x] 数据库 Schema 已设计并实现迁移
+- [x] 用户注册 API 可以正常工作
+- [x] 用户登录 API 返回 JWT 令牌
+- [x] JWT 中间件正确验证令牌
+- [x] 令牌刷新机制正常工作
+- [x] RBAC 权限控制系统已实现
+- [x] 项目级别权限管理 API 正常工作
+- [x] users API 正常工作（列表/详情/更新/删除）
+- [x] projects API 正常工作（CRUD + 成员管理）
+- [x] Docker Compose 配置可以启动所有服务
+- [x] PostgreSQL 服务正常并可连接
 
 ## 核心业务 API
-- [ ] 文件操作 API（读/写/删除/列表/复制）全部实现
-- [ ] 文档预处理 API 支持所有格式（PDF/DOCX/PPTX/XLSX）
-- [ ] 项目管理 API（创建/打开/列表/配置）全部实现
-- [ ] LLM 流式聊天 API 通过 WebSocket/SSE 工作
-- [ ] Qdrant 服务正常启动并可连接
-- [ ] MinIO 服务正常启动
-- [ ] MinIO bucket 自动创建功能正常
-- [ ] 两步思维链导入服务正常工作
-- [ ] 持久化导入队列服务正常工作
-- [ ] 向量搜索 API 正常工作
-- [ ] 知识图谱构建和洞察 API 正常工作
-- [ ] 深度研究任务队列正常工作
-- [ ] 审核系统 API 正常工作
-- [ ] Lint 检查 API 正常工作
+- [x] 文件操作 API（读/写/删除/列表/复制）全部实现
+- [x] 文档预处理 API 支持所有格式（PDF/DOCX/PPTX/XLSX）
+- [x] 项目管理 API（创建/打开/列表/配置）全部实现
+- [x] LLM 流式聊天 API 通过 WebSocket/SSE 工作
+- [x] Qdrant 服务正常启动并可连接
+- [x] MinIO 服务正常启动
+- [x] MinIO bucket 自动创建功能正常
+- [x] 两步思维链导入服务正常工作
+- [x] 持久化导入队列服务正常工作
+- [x] 向量搜索 API 正常工作
+- [x] 知识图谱构建和洞察 API 正常工作
+- [x] 深度研究任务队列正常工作
+- [x] 审核系统 API 正常工作
+- [x] Lint 检查 API 正常工作
+- [x] 所有代码编译通过（2026-04-19）
 
 ## 前端改造
 - [ ] Tauri 后端代码已移除（`src-tauri/src/commands/` 等）

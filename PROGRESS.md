@@ -2,6 +2,15 @@
 
 ## 当前进度
 
+### 总体统计
+
+- **Phase 1**: ✅ 100% 完成 (Task 1-4)
+- **Phase 2**: ✅ 100% 完成 (Task 5-10)
+- **Phase 3**: ⏳ 待开始 (Task 11-15)
+- **Phase 4-6**: ⏳ 待开始 (Task 16-20)
+
+**已完成**: 10/20 任务 (50%)
+
 ### 已完成的任务
 
 - [x] **Task 1**: 创建独立 Rust Web 服务项目结构
@@ -49,15 +58,46 @@
   - LLM 配置管理 API 完成
   - 数据库迁移文件创建完成（ingest_tasks, llm_configs 表）
 
+- [x] **Task 8**: 迁移向量搜索服务
+  - Qdrant 服务集成完成（Docker 部署 + Rust 客户端）
+  - 向量嵌入 API 完成
+  - 向量搜索 API 完成
+  - 向量 Upsert/Delete API 完成
+  - Docker Compose 配置更新（含 Qdrant 服务）
+  - ✅ 编译错误已修复（2026-04-19）
+
+- [x] **Task 9**: 迁移知识图谱服务
+  - 图谱构建 API 完成（基于 petgraph）
+  - Louvain 社区检测算法完成
+  - 图谱洞察 API 完成（意外连接检测 + 知识缺口识别）
+  - ✅ 编译错误已修复（2026-04-19）
+
+- [x] **Task 10**: 迁移深度研究和审核系统
+  - Web 搜索 API 完成（Tavily 集成）
+  - 深度研究任务队列 API 完成
+  - 审核项 CRUD API 完成
+  - Lint 检查 API 完成（结构检查 + 语义检查）
+  - ✅ 编译错误已修复（2026-04-19）
+
 ### 待完成的任务
 
-- [ ] **Task 8-10**: 迁移向量搜索、图谱、研究服务
-- [ ] **Task 11**: 移除 Tauri 后端依赖
-- [ ] **Task 12**: 实现 API 客户端层
-- [ ] **Task 13**: 实现认证 UI
-- [ ] **Task 14-15**: 改造组件和权限 UI
-- [ ] **Task 16**: 改造 Chrome 网页剪辑器
-- [ ] **Task 17**: 配置 Docker Compose（含 MinIO）
+- [ ] **Phase 3: 前端改造** (Task 11-15)
+  - [ ] Task 11: 改造 Tauri 容器（保留 WebView，移除后端代码）
+  - [ ] Task 12: 实现 API 客户端层
+  - [ ] Task 13: 实现认证 UI
+  - [ ] Task 14: 改造现有组件调用方式
+  - [ ] Task 15: 实现权限 UI
+
+- [ ] **Phase 4: 数据迁移** (Task 16)
+  - [ ] Task 16: 数据迁移工具
+
+- [ ] **Phase 5: 网页剪辑器和部署** (Task 17-18)
+  - [ ] Task 17: 改造 Chrome 网页剪辑器
+  - [ ] Task 18: 配置部署和 CI/CD
+
+- [ ] **Phase 6: 测试和优化** (Task 19-20)
+  - [ ] Task 19: 编写测试
+  - [ ] Task 20: 性能优化和安全加固
 
 ## 如何继续执行
 
@@ -83,14 +123,14 @@ cargo check
 ```bash
 cd c:\others\my_wiki_test\my_llm_wiki_test
 git add .
-git commit -m "feat: 完成 Phase 1-3 后端基础架构（认证+RBAC+超级管理员）"
+git commit -m "feat: 完成 Phase 2 后端核心业务 API（向量搜索+图谱+研究+审核）"
 ```
 
 ### 4. 继续实施后续任务
 
 告诉 AI 助手：
-- "继续执行 Task 5"
-- 或者 "从 Task X 继续"
+- "继续执行 Phase 3"
+- 或者 "从 Task 11 开始"
 
 AI 会：
 1. 读取 `tasks.md` 了解下一个任务
@@ -104,11 +144,11 @@ AI 会：
 当所有后端 API 完成后：
 
 ```bash
-# 启动数据库
-docker-compose up -d postgres
+# 启动数据库、MinIO 和 Qdrant
+cd server
+docker-compose up -d postgres minio qdrant
 
 # 运行服务器
-cd server
 cargo run
 
 # 测试健康检查
@@ -118,10 +158,11 @@ curl http://localhost:3000/health
 ## 技术决策记录
 
 - **前端**: Tauri 纯前端容器
-- **向量数据库**: LanceDB 服务端
+- **向量数据库**: Qdrant 服务端（Docker 部署）
 - **文件存储**: MinIO 对象存储
 - **部署**: Docker Compose
 - **超级管理员**: 初始账号 admin/admin123（首次登录后必须修改）
+- **编译状态**: ✅ 所有代码编译通过（2026-04-19）
 
 ## 文件清单
 
@@ -132,12 +173,29 @@ curl http://localhost:3000/health
 - `src/config/mod.rs` - 配置管理
 - `src/db/` - 数据库连接和迁移
 - `src/models/` - 数据模型
-- `src/services/auth.rs` - 认证服务
+- `src/services/` - 业务服务
+  - `auth.rs` - 认证服务
+  - `file.rs` - MinIO 文件服务
+  - `llm.rs` - LLM 集成服务
+  - `vector.rs` - Qdrant 向量服务
+  - `graph.rs` - 知识图谱服务
+  - `search.rs` - Web 搜索服务（Tavily）
 - `src/middleware/` - 认证和权限中间件
-- `src/api/` - API 路由（auth 已完成，其他待实现）
+- `src/api/` - API 路由
+  - `auth.rs` - 用户认证
+  - `users.rs` - 用户管理
+  - `projects.rs` - 项目管理
+  - `files.rs` - 文件操作
+  - `chat.rs` - LLM 聊天
+  - `ingest.rs` - 导入服务
+  - `vector.rs` - 向量搜索
+  - `graph.rs` - 知识图谱
+  - `research.rs` - 深度研究
+  - `review.rs` - 审核系统
+  - `lint.rs` - Lint 检查
 - `migrations/` - 数据库迁移文件
 - `Dockerfile` - Docker 配置
-- `docker-compose.yml` - 服务编排
+- `docker-compose.yml` - 服务编排（含 PostgreSQL, MinIO, Qdrant）
 
 ### 前端 (待改造)
 - `src/` - 现有 React 代码

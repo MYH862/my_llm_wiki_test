@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::sync::Arc;
 use crate::services::file::MinIOService;
+use crate::services::vector::QdrantService;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -11,6 +12,7 @@ pub struct Config {
     pub llm: LlmConfig,
     pub storage: StorageConfig,
     pub minio: MinIOConfig,
+    pub qdrant: QdrantConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -20,6 +22,14 @@ pub struct MinIOConfig {
     pub secret_key: String,
     pub use_ssl: bool,
     pub bucket_prefix: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct QdrantConfig {
+    pub url: String,
+    pub api_key: String,
+    pub collection_prefix: String,
+    pub vector_size: u64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -120,6 +130,17 @@ impl Config {
                 bucket_prefix: std::env::var("MINIO_BUCKET_PREFIX")
                     .unwrap_or_else(|_| "llm-wiki".to_string()),
             },
+            qdrant: QdrantConfig {
+                url: std::env::var("QDRANT_URL")
+                    .unwrap_or_else(|_| "http://localhost:6334".to_string()),
+                api_key: std::env::var("QDRANT_API_KEY").unwrap_or_default(),
+                collection_prefix: std::env::var("QDRANT_COLLECTION_PREFIX")
+                    .unwrap_or_else(|_| "llm-wiki".to_string()),
+                vector_size: std::env::var("QDRANT_VECTOR_SIZE")
+                    .ok()
+                    .and_then(|n| n.parse().ok())
+                    .unwrap_or(1536),
+            },
         }
     }
 
@@ -138,4 +159,5 @@ pub struct AppStateInner {
     pub config: Config,
     pub db: sqlx::PgPool,
     pub minio: MinIOService,
+    pub qdrant: QdrantService,
 }

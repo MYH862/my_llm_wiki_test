@@ -64,7 +64,7 @@ pub async fn stream_chat(
         let bytes_stream = response.bytes_stream();
         use futures::StreamExt;
         
-        let mut buffer = String::new();
+        let _buffer = String::new();
         
         let mut stream = bytes_stream;
         while let Some(chunk_result) = stream.next().await {
