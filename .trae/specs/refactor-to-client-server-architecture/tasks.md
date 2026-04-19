@@ -36,17 +36,17 @@
   - [x] SubTask 5.6: 实现文件复制 API
   - [x] SubTask 5.7: 实现文档预处理 API（PDF, DOCX, PPTX, XLSX）
 
-- [ ] Task 6: 迁移项目管理 API
-  - [ ] SubTask 6.1: 实现创建项目 API
-  - [ ] SubTask 6.2: 实现打开项目 API
-  - [ ] SubTask 6.3: 实现项目列表 API
-  - [ ] SubTask 6.4: 实现项目配置 API
+- [x] Task 6: 迁移项目管理 API
+  - [x] SubTask 6.1: 实现创建项目 API
+  - [x] SubTask 6.2: 实现打开项目 API
+  - [x] SubTask 6.3: 实现项目列表 API
+  - [x] SubTask 6.4: 实现项目配置 API
 
-- [ ] Task 7: 迁移 LLM 集成服务
-  - [ ] SubTask 7.1: 实现 LLM 流式聊天 API（WebSocket/SSE）
-  - [ ] SubTask 7.2: 实现两步思维链导入服务
-  - [ ] SubTask 7.3: 实现持久化导入队列服务
-  - [ ] SubTask 7.4: 实现 LLM 配置管理 API
+- [x] Task 7: 迁移 LLM 集成服务
+  - [x] SubTask 7.1: 实现 LLM 流式聊天 API（WebSocket/SSE）
+  - [x] SubTask 7.2: 实现两步思维链导入服务
+  - [x] SubTask 7.3: 实现持久化导入队列服务
+  - [x] SubTask 7.4: 实现 LLM 配置管理 API
 
 - [ ] Task 8: 迁移向量搜索服务
   - [ ] SubTask 8.1: 集成 Qdrant 服务（Docker 部署 + Rust 客户端）

@@ -4,6 +4,7 @@ pub mod projects;
 pub mod files;
 pub mod chat;
 pub mod ingest;
+pub mod llm_configs;
 pub mod graph;
 pub mod search;
 pub mod research;

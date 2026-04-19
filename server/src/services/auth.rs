@@ -28,15 +28,13 @@ pub async fn register(
     .bind(&req.display_name)
     .fetch_one(pool)
     .await
-    .map_err(|e| match e {
-        sqlx::Error::Database(db_err) => {
+    .map_err(|e| {
+        if let sqlx::Error::Database(ref db_err) = e {
             if db_err.is_unique_violation() {
-                AppError::BadRequest("Username or email already exists".to_string())
-            } else {
-                AppError::Database(e)
+                return AppError::BadRequest("Username or email already exists".to_string());
             }
         }
-        _ => AppError::Database(e),
+        AppError::Internal
     })?;
 
     let access_token = generate_access_token(user.id, &user.username, jwt_secret, jwt_expiration_hours)

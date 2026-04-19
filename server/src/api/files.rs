@@ -31,6 +31,8 @@ fn extract_pdf_text(content: &[u8]) -> Result<String, AppError> {
 }
 
 fn extract_excel_text(content: &[u8]) -> Result<String, AppError> {
+    use calamine::Reader;
+    
     let mut workbook = calamine::Xlsx::<Cursor<&[u8]>>::new(Cursor::new(content))
         .map_err(|e| AppError::BadRequest(format!("Failed to parse Excel: {}", e)))?;
 
@@ -89,6 +91,11 @@ pub fn router() -> Router<AppState> {
         .route("/delete", delete(delete_file))
         .route("/copy", post(copy_file))
         .route("/preprocess", get(preprocess_document))
+}
+
+pub fn project_router() -> Router<AppState> {
+    Router::new()
+        .nest("/:project_id", router())
 }
 
 pub async fn list_files(

@@ -11,34 +11,11 @@ use crate::config::AppState;
 use crate::middleware::auth::Claims;
 use crate::middleware::error::AppError;
 use crate::middleware::permission::{check_user_permission, check_project_permission, is_super_admin};
-use crate::models::project::{Project, CreateProjectRequest, UpdateProjectRequest, AddProjectMemberRequest, ProjectMember};
-
-#[derive(Serialize)]
-pub struct ProjectResponse {
-    pub id: Uuid,
-    pub name: String,
-    pub description: Option<String>,
-    pub owner_id: Uuid,
-    pub storage_path: String,
-    pub template: Option<String>,
-    pub is_active: bool,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-}
-
-impl From<Project> for ProjectResponse {
-    fn from(project: Project) -> Self {
-        Self {
-            id: project.id,
-            name: project.name,
-            description: project.description,
-            owner_id: project.owner_id,
-            storage_path: project.storage_path,
-            template: project.template,
-            is_active: project.is_active,
-            created_at: project.created_at,
-        }
-    }
-}
+use crate::models::project::{
+    Project, CreateProjectRequest, UpdateProjectRequest, AddProjectMemberRequest, 
+    ProjectMember, ProjectResponse, ProjectSettings, UpdateProjectSettingsRequest, 
+    ProjectStats, OpenProjectResponse
+};
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -47,6 +24,10 @@ pub fn router() -> Router<AppState> {
         .route("/:id", get(get_project))
         .route("/:id", put(update_project))
         .route("/:id", delete(delete_project))
+        .route("/:id/open", get(open_project))
+        .route("/:id/settings", get(get_project_settings))
+        .route("/:id/settings", put(update_project_settings))
+        .route("/:id/stats", get(get_project_stats))
         .route("/:id/members", get(list_project_members))
         .route("/:id/members", post(add_project_member))
         .route("/:id/members/:user_id", delete(remove_project_member))
@@ -136,6 +117,232 @@ pub async fn get_project(
     match project {
         Some(p) => Ok(Json(ProjectResponse::from(p))),
         None => Err(AppError::NotFound("Project not found".to_string())),
+    }
+}
+
+pub async fn open_project(
+    State(state): State<AppState>,
+    claims: axum::extract::Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<OpenProjectResponse>, AppError> {
+    if !check_project_permission(&state.db, claims.0.sub, id, "projects:read").await? {
+        return Err(AppError::PermissionDenied);
+    }
+
+    let project = sqlx::query_as::<_, Project>("SELECT * FROM projects WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|_| AppError::Internal)?;
+
+    let project = match project {
+        Some(p) => p,
+        None => return Err(AppError::NotFound("Project not found".to_string())),
+    };
+
+    let settings = sqlx::query_as::<_, (String, Option<String>)>(
+        r#"
+        SELECT key, value FROM project_settings WHERE project_id = $1
+        "#
+    )
+    .bind(id)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let settings_map: std::collections::HashMap<String, Option<String>> = settings
+        .into_iter()
+        .map(|(k, v)| (k, v))
+        .collect();
+
+    let project_settings = ProjectSettings {
+        llm_provider: settings_map.get("llm_provider").cloned().flatten(),
+        llm_api_key: settings_map.get("llm_api_key").cloned().flatten(),
+        llm_model: settings_map.get("llm_model").cloned().flatten(),
+        embedding_model: settings_map.get("embedding_model").cloned().flatten(),
+        vector_db_url: settings_map.get("vector_db_url").cloned().flatten(),
+        max_context_tokens: settings_map.get("max_context_tokens")
+            .cloned()
+            .flatten()
+            .and_then(|v| v.parse().ok()),
+        enable_auto_index: settings_map.get("enable_auto_index")
+            .cloned()
+            .flatten()
+            .and_then(|v| v.parse().ok()),
+    };
+
+    let stats = get_project_stats_internal(&state, id).await;
+
+    let user_role = sqlx::query_scalar::<_, String>(
+        r#"
+        SELECT r.name FROM roles r
+        JOIN project_members pm ON r.id = pm.role_id
+        WHERE pm.project_id = $1 AND pm.user_id = $2
+        "#
+    )
+    .bind(id)
+    .bind(claims.0.sub)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| AppError::Internal)?
+    .unwrap_or_else(|| "viewer".to_string());
+
+    Ok(Json(OpenProjectResponse {
+        project: ProjectResponse::from(project),
+        settings: project_settings,
+        stats,
+        user_role,
+    }))
+}
+
+pub async fn get_project_settings(
+    State(state): State<AppState>,
+    claims: axum::extract::Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ProjectSettings>, AppError> {
+    if !check_project_permission(&state.db, claims.0.sub, id, "projects:read").await? {
+        return Err(AppError::PermissionDenied);
+    }
+
+    let settings = sqlx::query_as::<_, (String, Option<String>)>(
+        "SELECT key, value FROM project_settings WHERE project_id = $1"
+    )
+    .bind(id)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let settings_map: std::collections::HashMap<String, Option<String>> = settings
+        .into_iter()
+        .map(|(k, v)| (k, v))
+        .collect();
+
+    Ok(Json(ProjectSettings {
+        llm_provider: settings_map.get("llm_provider").cloned().flatten(),
+        llm_api_key: settings_map.get("llm_api_key").cloned().flatten(),
+        llm_model: settings_map.get("llm_model").cloned().flatten(),
+        embedding_model: settings_map.get("embedding_model").cloned().flatten(),
+        vector_db_url: settings_map.get("vector_db_url").cloned().flatten(),
+        max_context_tokens: settings_map.get("max_context_tokens")
+            .cloned()
+            .flatten()
+            .and_then(|v| v.parse().ok()),
+        enable_auto_index: settings_map.get("enable_auto_index")
+            .cloned()
+            .flatten()
+            .and_then(|v| v.parse().ok()),
+    }))
+}
+
+pub async fn update_project_settings(
+    State(state): State<AppState>,
+    claims: axum::extract::Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateProjectSettingsRequest>,
+) -> Result<Json<ProjectSettings>, AppError> {
+    if !check_project_permission(&state.db, claims.0.sub, id, "projects:update").await? {
+        return Err(AppError::PermissionDenied);
+    }
+
+    let settings_to_update = vec![
+        ("llm_provider", req.llm_provider),
+        ("llm_api_key", req.llm_api_key),
+        ("llm_model", req.llm_model),
+        ("embedding_model", req.embedding_model),
+        ("vector_db_url", req.vector_db_url),
+        ("max_context_tokens", req.max_context_tokens.map(|v| v.to_string())),
+        ("enable_auto_index", req.enable_auto_index.map(|v| v.to_string())),
+    ];
+
+    for (key, value) in settings_to_update {
+        if let Some(val) = value {
+            sqlx::query(
+                r#"
+                INSERT INTO project_settings (project_id, key, value)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (project_id, key) DO UPDATE SET value = $3, updated_at = NOW()
+                "#
+            )
+            .bind(id)
+            .bind(key)
+            .bind(&val)
+            .execute(&state.db)
+            .await
+            .map_err(|_| AppError::Internal)?;
+        }
+    }
+
+    get_project_settings(State(state), claims, Path(id)).await
+}
+
+pub async fn get_project_stats(
+    State(state): State<AppState>,
+    claims: axum::extract::Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ProjectStats>, AppError> {
+    if !check_project_permission(&state.db, claims.0.sub, id, "projects:read").await? {
+        return Err(AppError::PermissionDenied);
+    }
+
+    Ok(Json(get_project_stats_internal(&state, id).await))
+}
+
+async fn get_project_stats_internal(state: &AppState, project_id: Uuid) -> ProjectStats {
+    let total_files = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM files WHERE project_id = $1"
+    )
+    .bind(project_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(0);
+
+    let total_vectors = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM vectors WHERE project_id = $1"
+    )
+    .bind(project_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(0);
+
+    let total_graph_nodes = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM graph_nodes WHERE project_id = $1"
+    )
+    .bind(project_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(0);
+
+    let total_graph_edges = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM graph_edges WHERE project_id = $1"
+    )
+    .bind(project_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(0);
+
+    let last_indexed_at = sqlx::query_scalar::<_, chrono::DateTime<chrono::Utc>>(
+        "SELECT MAX(updated_at) FROM files WHERE project_id = $1 AND indexed_at IS NOT NULL"
+    )
+    .bind(project_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    ProjectStats {
+        total_files,
+        total_vectors,
+        total_graph_nodes,
+        total_graph_edges,
+        last_indexed_at,
     }
 }
 

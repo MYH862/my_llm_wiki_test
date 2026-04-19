@@ -4,9 +4,7 @@ use tracing::info;
 pub async fn create_pool(database_url: &str, max_connections: u32) -> PgPool {
     info!("Connecting to database...");
     
-    PgPool::builder()
-        .max_connections(max_connections)
-        .build(database_url)
+    PgPool::connect(database_url)
         .await
         .expect("Failed to create database pool")
 }

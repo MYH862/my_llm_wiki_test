@@ -31,10 +31,25 @@
   - 文件读取/写入/删除/列表/复制 API 完成
   - MinIO 配置集成到 AppState
 
+- [x] **Task 6**: 迁移项目管理 API
+  - 创建项目 API 完成
+  - 打开项目 API 完成（包含完整上下文加载）
+  - 项目列表 API 完成
+  - 项目配置 API 完成（设置管理）
+  - 项目统计 API 完成
+  - 项目成员管理 API 完成
+  - 数据库迁移文件创建完成（project_settings, files, vectors, graph 表）
+
+- [x] **Task 7**: 迁移 LLM 集成服务
+  - LLM 流式聊天 API 完成（SSE 支持）
+  - 多 LLM 提供商支持（OpenAI, Anthropic, Google, Ollama, Minimax, Custom）
+  - 两步思维链导入服务完成
+  - 持久化导入队列服务完成
+  - LLM 配置管理 API 完成
+  - 数据库迁移文件创建完成（ingest_tasks, llm_configs 表）
+
 ### 待完成的任务
 
-- [ ] **Task 5-6**: 迁移文件和项目 API
-- [ ] **Task 7**: 迁移 LLM 集成服务
 - [ ] **Task 8-10**: 迁移向量搜索、图谱、研究服务
 - [ ] **Task 11**: 移除 Tauri 后端依赖
 - [ ] **Task 12**: 实现 API 客户端层
