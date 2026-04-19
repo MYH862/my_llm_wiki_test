@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use minio_rsc::client::{BucketArgs, CopySource, KeyArgs, ListObjectsArgs, Minio};
 use minio_rsc::provider::StaticProvider;
-use tracing::info;
+use tracing::{info, error};
 
 use crate::middleware::error::AppError;
 
@@ -27,7 +27,10 @@ impl MinIOService {
             .provider(provider)
             .secure(use_ssl)
             .build()
-            .map_err(|e| AppError::BadRequest(format!("Failed to create MinIO client: {}", e)))?;
+            .map_err(|e| {
+                error!("Failed to create MinIO client: {}", e);
+                AppError::Internal
+            })?;
         
         Ok(Self {
             client,
@@ -44,12 +47,18 @@ impl MinIOService {
         info!("Ensuring bucket exists: {}", bucket_name);
         
         let exists = self.client.bucket_exists(BucketArgs::new(&bucket_name)).await
-            .map_err(|e| AppError::BadRequest(format!("Failed to check bucket: {}", e)))?;
+            .map_err(|e| {
+                error!("Failed to check bucket existence: {}", e);
+                AppError::Internal
+            })?;
         
         if !exists {
             info!("Creating bucket: {}", bucket_name);
             self.client.make_bucket(BucketArgs::new(&bucket_name), false).await
-                .map_err(|e| AppError::BadRequest(format!("Failed to create bucket: {}", e)))?;
+                .map_err(|e| {
+                    error!("Failed to create bucket: {}", e);
+                    AppError::Internal
+                })?;
         }
         
         Ok(())
@@ -74,7 +83,10 @@ impl MinIOService {
             .metadata(metadata);
         
         self.client.put_object(&bucket_name, key_args, content.to_vec().into()).await
-            .map_err(|e| AppError::BadRequest(format!("Failed to upload file: {}", e)))?;
+            .map_err(|e| {
+                error!("Failed to upload file to {}: {}", path, e);
+                AppError::Internal
+            })?;
         
         Ok(())
     }
@@ -84,10 +96,16 @@ impl MinIOService {
         info!("Downloading file from {}/{}", bucket_name, path);
         
         let response = self.client.get_object(&bucket_name, KeyArgs::new(path)).await
-            .map_err(|e| AppError::BadRequest(format!("Failed to download file: {}", e)))?;
+            .map_err(|e| {
+                error!("Failed to download file {}: {}", path, e);
+                AppError::NotFound(format!("File not found: {}", path))
+            })?;
         
         let bytes = response.bytes().await
-            .map_err(|e| AppError::BadRequest(format!("Failed to read response: {}", e)))?;
+            .map_err(|e| {
+                error!("Failed to read response for {}: {}", path, e);
+                AppError::Internal
+            })?;
         
         Ok(bytes.to_vec())
     }
@@ -97,7 +115,10 @@ impl MinIOService {
         info!("Deleting file from {}/{}", bucket_name, path);
         
         self.client.remove_object(&bucket_name, KeyArgs::new(path)).await
-            .map_err(|e| AppError::BadRequest(format!("Failed to delete file: {}", e)))?;
+            .map_err(|e| {
+                error!("Failed to delete file {}: {}", path, e);
+                AppError::Internal
+            })?;
         
         Ok(())
     }
@@ -108,7 +129,10 @@ impl MinIOService {
         
         let args = ListObjectsArgs::default().prefix(prefix.to_string());
         let result = self.client.list_objects(&bucket_name, args).await
-            .map_err(|e| AppError::BadRequest(format!("Failed to list files: {}", e)))?;
+            .map_err(|e| {
+                error!("Failed to list files in {}: {}", prefix, e);
+                AppError::Internal
+            })?;
         
         let files = result.contents.iter().map(|obj| obj.key.clone()).collect();
         
@@ -126,7 +150,10 @@ impl MinIOService {
         
         let source = CopySource::new(&bucket_name, from_path);
         self.client.copy_object(&bucket_name, KeyArgs::new(to_path), source).await
-            .map_err(|e| AppError::BadRequest(format!("Failed to copy file: {}", e)))?;
+            .map_err(|e| {
+                error!("Failed to copy file from {} to {}: {}", from_path, to_path, e);
+                AppError::Internal
+            })?;
         
         Ok(())
     }
