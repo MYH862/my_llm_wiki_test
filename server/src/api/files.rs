@@ -6,54 +6,14 @@ use axum::{
 };
 use serde::Deserialize;
 use uuid::Uuid;
-use std::io::Cursor;
 
 use crate::config::AppState;
 use crate::middleware::auth::Claims;
 use crate::middleware::error::AppError;
 use crate::middleware::permission::check_project_permission;
 use crate::models::file::{FileInfo, DirectoryEntry, FileContent, DocumentPreprocessResponse};
-
-fn extract_pdf_text(content: &[u8]) -> Result<String, AppError> {
-    let doc = lopdf::Document::load_from(Cursor::new(content))
-        .map_err(|e| AppError::BadRequest(format!("Failed to parse PDF: {}", e)))?;
-
-    let mut text = String::new();
-    for page in doc.get_pages() {
-        let page_number = page.0;
-        if let Ok(page_text) = doc.extract_text(&[page_number]) {
-            text.push_str(&page_text);
-            text.push_str("\n\n");
-        }
-    }
-
-    Ok(text)
-}
-
-fn extract_excel_text(content: &[u8]) -> Result<String, AppError> {
-    use calamine::Reader;
-    
-    let mut workbook = calamine::Xlsx::<Cursor<&[u8]>>::new(Cursor::new(content))
-        .map_err(|e| AppError::BadRequest(format!("Failed to parse Excel: {}", e)))?;
-
-    let mut text = String::new();
-    for sheet_name in workbook.sheet_names() {
-        if let Ok(range) = workbook.worksheet_range(&sheet_name) {
-            text.push_str(&format!("## Sheet: {}\n\n", sheet_name));
-            for row in range.rows() {
-                let row_text: Vec<String> = row
-                    .iter()
-                    .map(|cell| cell.to_string())
-                    .collect();
-                text.push_str(&row_text.join("\t"));
-                text.push_str("\n");
-            }
-            text.push_str("\n");
-        }
-    }
-
-    Ok(text)
-}
+use crate::services::document_processor::get_processor_by_path;
+use crate::utils::content_type::get_content_type_by_path;
 
 #[derive(Deserialize)]
 pub struct ListQuery {
@@ -153,15 +113,7 @@ pub async fn read_file(
 
     let content = state.minio.download_file(&project_id.to_string(), &query.path).await?;
     let content_str = String::from_utf8(content).map_err(|e| AppError::BadRequest(e.to_string()))?;
-
-    let content_type = if query.path.ends_with(".md") {
-        "text/markdown"
-    } else if query.path.ends_with(".json") {
-        "application/json"
-    } else {
-        "text/plain"
-    }
-    .to_string();
+    let content_type = get_content_type_by_path(&query.path);
 
     Ok(Json(FileContent {
         path: query.path,
@@ -185,14 +137,7 @@ pub async fn write_file(
     .await
     .map_err(|_| AppError::PermissionDenied)?;
 
-    let content_type = req.content_type.unwrap_or_else(|| {
-        if req.path.ends_with(".md") {
-            "text/markdown"
-        } else {
-            "text/plain"
-        }
-        .to_string()
-    });
+    let content_type = req.content_type.unwrap_or_else(|| get_content_type_by_path(&req.path));
 
     state
         .minio
@@ -224,32 +169,15 @@ pub async fn preprocess_document(
 
     let content = state.minio.download_file(&project_id.to_string(), &query.path).await?;
     
-    let content_type = if query.path.ends_with(".pdf") {
-        "application/pdf"
-    } else if query.path.ends_with(".docx") {
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    } else if query.path.ends_with(".pptx") {
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    } else if query.path.ends_with(".xlsx") || query.path.ends_with(".xls") {
-        "application/vnd.ms-excel"
-    } else {
-        return Err(AppError::BadRequest("Unsupported file format".to_string()));
-    };
-
-    let markdown_content = match content_type {
-        "application/pdf" => {
-            extract_pdf_text(&content)?
-        }
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" | 
-        "application/vnd.ms-excel" => {
-            extract_excel_text(&content)?
-        }
-        _ => String::from_utf8(content).map_err(|e| AppError::BadRequest(e.to_string()))?,
-    };
+    let processor = get_processor_by_path(&query.path)
+        .ok_or_else(|| AppError::BadRequest("Unsupported file format".to_string()))?;
+    
+    let content_type = processor.content_type().to_string();
+    let markdown_content = processor.extract_to_markdown(&content)?;
 
     Ok(Json(DocumentPreprocessResponse {
         original_path: query.path,
-        content_type: content_type.to_string(),
+        content_type,
         markdown_content,
         page_count: None,
     }))
@@ -298,12 +226,7 @@ pub async fn copy_file(
         .download_file(&project_id.to_string(), &req.from_path)
         .await?;
 
-    let content_type = if req.to_path.ends_with(".md") {
-        "text/markdown"
-    } else {
-        "text/plain"
-    }
-    .to_string();
+    let content_type = get_content_type_by_path(&req.to_path);
 
     state
         .minio
