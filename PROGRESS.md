@@ -27,9 +27,10 @@
   - is_super_admin() 辅助函数完成
 
 - [x] **Task 5**: 迁移文件操作 API
-  - MinIO 文件服务完成
+  - MinIO 文件服务完成（使用 minio-rsc SDK）
   - 文件读取/写入/删除/列表/复制 API 完成
   - MinIO 配置集成到 AppState
+  - ✅ MinIO SDK 集成已修复（2026-04-19）
 
 - [x] **Task 6**: 迁移项目管理 API
   - 创建项目 API 完成

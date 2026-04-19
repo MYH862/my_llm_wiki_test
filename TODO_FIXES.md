@@ -2,28 +2,27 @@
 
 ## 1. MinIO 对象存储集成
 
-**问题描述**：
-- 当前 `minio = "0.2"` crate API 与代码不兼容
-- MinIO 服务已简化为 stub 实现（所有方法返回空结果）
+**状态**: ✅ 已修复
 
-**影响范围**：
-- 文件上传/下载功能不可用
-- 项目创建时无法自动创建 bucket
-- 文件列表/删除/复制功能不可用
+**问题描述**：
+- ~~当前 `minio = "0.2"` crate API 与代码不兼容~~
+- ~~MinIO 服务已简化为 stub 实现（所有方法返回空结果）~~
 
 **修复方案**：
-1. 使用正确的 MinIO Rust SDK：
-   - 选项 A：`minio-rsc` crate（推荐，API 更友好）
-   - 选项 B：官方 `minio` crate（需要查找正确版本）
-2. 重新实现 `MinIOService` 的所有方法
-3. 测试文件上传/下载功能
+- ✅ 使用 `minio-rsc = "0.2"` crate（API 更友好）
+- ✅ 重新实现了 `MinIOService` 的所有方法：
+  - `ensure_bucket`: 检查并创建 bucket
+  - `upload_file`: 上传文件到 MinIO
+  - `download_file`: 从 MinIO 下载文件
+  - `delete_file`: 删除 MinIO 中的文件
+  - `list_files`: 列出 bucket 中的文件
+  - `copy_file`: 复制 MinIO 中的文件
 
 **相关文件**：
-- `server/src/services/file.rs`
-- `server/src/api/files.rs`
-- `server/Cargo.toml`
+- `server/src/services/file.rs` - 已完全重写
+- `server/Cargo.toml` - 使用 minio-rsc = "0.2"
 
-**优先级**：高（核心功能）
+**优先级**：高（核心功能）- ✅ 已完成
 
 ---
 
@@ -287,9 +286,9 @@ volumes:
 ### 高优先级（核心功能）
 1. ✅ PostgreSQL 数据库启动
 2. ✅ MinIO 服务部署
-3. ✅ MinIO 对象存储集成
-4. ✅ 向量数据库（Qdrant）集成
-5. ✅ LLM 流式聊天（WebSocket）
+3. ✅ MinIO 对象存储集成 - **已完成**
+4. ⬜ 向量数据库（Qdrant）集成
+5. ⬜ LLM 流式聊天（WebSocket）
 
 ### 中优先级（重要功能）
 6. 文档预处理功能
@@ -320,5 +319,5 @@ volumes:
 
 ---
 
-**最后更新**：2026-04-18
-**状态**：待修复
+**最后更新**：2026-04-19
+**状态**：MinIO 集成已修复，待测试
