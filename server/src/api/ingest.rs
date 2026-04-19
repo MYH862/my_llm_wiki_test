@@ -97,30 +97,46 @@ async fn run_ingest_task(
 ) {
     info!("Processing ingest task {}", task_id);
 
-    sqlx::query!(
+    if let Err(e) = sqlx::query!(
         "UPDATE ingest_tasks SET status = $1, started_at = NOW() WHERE id = $2",
         "processing",
         task_id,
     )
     .execute(&db)
-    .await
-    .unwrap_or_else(|e| {
+    .await {
         error!("Failed to update task status: {}", e);
-    });
+        let _ = sqlx::query!(
+            "UPDATE ingest_tasks SET status = $1, error = $2, completed_at = NOW() WHERE id = $3",
+            "failed",
+            format!("Failed to update task status: {}", e),
+            task_id,
+        )
+        .execute(&db)
+        .await;
+        return;
+    }
 
     let llm_service = LlmService::new();
 
-    sqlx::query!(
+    if let Err(e) = sqlx::query!(
         "UPDATE ingest_tasks SET status = $1, progress = $2 WHERE id = $3",
         "processing",
         0.33f64,
         task_id,
     )
     .execute(&db)
-    .await
-    .unwrap_or_else(|e| {
+    .await {
         error!("Failed to update task progress: {}", e);
-    });
+        let _ = sqlx::query!(
+            "UPDATE ingest_tasks SET status = $1, error = $2, completed_at = NOW() WHERE id = $3",
+            "failed",
+            format!("Failed to update task progress: {}", e),
+            task_id,
+        )
+        .execute(&db)
+        .await;
+        return;
+    }
 
     let step1_messages = vec![
         ChatMessage {
@@ -158,7 +174,7 @@ async fn run_ingest_task(
         }
     };
 
-    sqlx::query!(
+    if let Err(e) = sqlx::query!(
         "UPDATE ingest_tasks SET status = $1, progress = $2, step1_result = $3 WHERE id = $4",
         "processing",
         0.66f64,
@@ -166,10 +182,18 @@ async fn run_ingest_task(
         task_id,
     )
     .execute(&db)
-    .await
-    .unwrap_or_else(|e| {
+    .await {
         error!("Failed to update task after step 1: {}", e);
-    });
+        let _ = sqlx::query!(
+            "UPDATE ingest_tasks SET status = $1, error = $2, completed_at = NOW() WHERE id = $3",
+            "failed",
+            format!("Failed to update task after step 1: {}", e),
+            task_id,
+        )
+        .execute(&db)
+        .await;
+        return;
+    }
 
     let step2_messages = vec![
         ChatMessage {
@@ -207,7 +231,7 @@ async fn run_ingest_task(
         }
     };
 
-    sqlx::query!(
+    if let Err(e) = sqlx::query!(
         "UPDATE ingest_tasks SET status = $1, progress = $2, result = $3, completed_at = NOW() WHERE id = $4",
         "completed",
         1.0f64,
@@ -215,10 +239,17 @@ async fn run_ingest_task(
         task_id,
     )
     .execute(&db)
-    .await
-    .unwrap_or_else(|e| {
+    .await {
         error!("Failed to complete task: {}", e);
-    });
+        let _ = sqlx::query!(
+            "UPDATE ingest_tasks SET status = $1, error = $2, completed_at = NOW() WHERE id = $3",
+            "failed",
+            format!("Failed to complete task: {}", e),
+            task_id,
+        )
+        .execute(&db)
+        .await;
+    }
 
     info!("Completed ingest task {}", task_id);
 }
@@ -249,7 +280,7 @@ pub async fn get_ingest_status(
             task_id: t.id,
             status: t.status,
             progress: t.progress,
-            result: t.result,
+            result: t.result.map(|r| serde_json::Value::String(r)),
             error: t.error,
         })),
         None => Err(AppError::NotFound("Task not found".to_string())),
@@ -312,7 +343,7 @@ pub async fn list_ingest_queue(
                 task_id: t.id,
                 status: t.status,
                 progress: t.progress,
-                result: t.result,
+                result: t.result.map(|r| serde_json::Value::String(r)),
                 error: t.error,
             })
             .collect(),

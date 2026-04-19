@@ -155,7 +155,7 @@ pub async fn refresh_token(
         user_id,
         new_refresh_token,
         expires_at,
-        jti
+        jti.to_string()
     )
     .execute(pool)
     .await
