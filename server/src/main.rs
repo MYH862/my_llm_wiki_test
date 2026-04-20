@@ -4,15 +4,29 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 
 #[tokio::main]
 async fn main() {
+    let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into());
+    
     tracing_subscriber::registry()
-        .with(EnvFilter::new(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into())))
-        .with(tracing_subscriber::fmt::layer())
+        .with(EnvFilter::new(&log_level))
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(true)
+                .with_thread_ids(true)
+                .with_file(true)
+                .with_line_number(true)
+                .with_level(true)
+        )
         .init();
 
     let config = Config::from_env();
     let addr = format!("{}:{}", config.server.host, config.server.port);
 
     info!("Starting LLM Wiki Server on {}", addr);
+    info!("Database URL: {}", config.database.url);
+    info!("MinIO Endpoint: {}", config.minio.endpoint);
+    info!("Qdrant URL: {}", config.qdrant.url);
+    info!("CORS Origins: {}", config.cors.allowed_origins);
+    info!("Log Level: {}", log_level);
 
     let state = create_state(config).await;
     let app = create_app(state).await;
@@ -22,6 +36,7 @@ async fn main() {
         .expect("Failed to bind address");
 
     info!("Server listening on {}", addr);
+    info!("Open http://{}/health to check server status", addr);
 
     axum::serve(listener, app)
         .await

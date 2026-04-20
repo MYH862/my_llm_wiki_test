@@ -67,75 +67,75 @@
 
 ## Phase 3: 前端改造
 
-- [ ] Task 11: 改造 Tauri 容器（保留 WebView，移除后端代码）
-  - [ ] SubTask 11.1: 移除 `src-tauri/src/commands/` 目录（Tauri 命令处理代码）
-  - [ ] SubTask 11.2: 移除 `src-tauri/src/clip_server.rs` 等后端服务代码
-  - [ ] SubTask 11.3: 清理 `src-tauri/Cargo.toml` 移除不必要的后端依赖
-  - [ ] SubTask 11.4: 验证 Tauri 构建仍然可用（`cargo tauri dev`）
+- [x] Task 11: 改造 Tauri 容器（保留 WebView，移除后端代码）
+  - [x] SubTask 11.1: 移除 `src-tauri/src/commands/` 目录（Tauri 命令处理代码）
+  - [x] SubTask 11.2: 移除 `src-tauri/src/clip_server.rs` 等后端服务代码
+  - [x] SubTask 11.3: 清理 `src-tauri/Cargo.toml` 移除不必要的后端依赖
+  - [x] SubTask 11.4: 验证 Tauri 构建仍然可用（`cargo tauri dev`）
 
-- [ ] Task 12: 实现 API 客户端层
-  - [ ] SubTask 12.1: 创建 HTTP 客户端封装（Axios 实例）
-  - [ ] SubTask 12.2: 实现认证拦截器（JWT 自动附加/刷新）
-  - [ ] SubTask 12.3: 实现错误处理和重试机制
-  - [ ] SubTask 12.4: 创建 WebSocket 客户端（用于流式响应）
+- [x] Task 12: 实现 API 客户端层
+  - [x] SubTask 12.1: 创建 HTTP 客户端封装（Axios 实例）
+  - [x] SubTask 12.2: 实现认证拦截器（JWT 自动附加/刷新）
+  - [x] SubTask 12.3: 实现错误处理和重试机制
+  - [x] SubTask 12.4: 创建 WebSocket 客户端（用于流式响应）
 
-- [ ] Task 13: 实现认证 UI
-  - [ ] SubTask 13.1: 创建登录页面组件
-  - [ ] SubTask 13.2: 创建注册页面组件
-  - [ ] SubTask 13.3: 实现认证状态管理（Zustand store）
-  - [ ] SubTask 13.4: 实现路由守卫（未登录重定向）
+- [x] Task 13: 实现认证 UI
+  - [x] SubTask 13.1: 创建登录页面组件
+  - [x] SubTask 13.2: 创建注册页面组件
+  - [x] SubTask 13.3: 实现认证状态管理（Zustand store）
+  - [x] SubTask 13.4: 实现路由守卫（未登录重定向）
 
-- [ ] Task 14: 改造现有组件调用方式
-  - [ ] SubTask 14.1: 替换所有 Tauri 命令调用为 HTTP API 调用
-  - [ ] SubTask 14.2: 替换 Tauri Store 为 localStorage/IndexedDB
-  - [ ] SubTask 14.3: 更新文件操作组件
-  - [ ] SubTask 14.4: 更新聊天组件（使用 WebSocket）
-  - [ ] SubTask 14.5: 更新导入队列组件（使用 WebSocket 进度）
-  - [ ] SubTask 14.6: 更新设置页面（服务端配置同步）
+- [x] Task 14: 改造现有组件调用方式
+  - [x] SubTask 14.1: 替换所有 Tauri 命令调用为 HTTP API 调用
+  - [x] SubTask 14.2: 替换 Tauri Store 为 localStorage/IndexedDB
+  - [x] SubTask 14.3: 更新文件操作组件
+  - [x] SubTask 14.4: 更新聊天组件（使用 WebSocket）
+  - [x] SubTask 14.5: 更新导入队列组件（使用 WebSocket 进度）
+  - [x] SubTask 14.6: 更新设置页面（服务端配置同步）
 
-- [ ] Task 15: 实现权限 UI
-  - [ ] SubTask 15.1: 创建权限检查 Hook
-  - [ ] SubTask 15.2: 实现功能级权限控制（隐藏/禁用无权限功能）
-  - [ ] SubTask 15.3: 创建项目管理页面（成员管理、角色分配）
-  - [ ] SubTask 15.4: 创建用户管理页面（仅管理员可见）
+- [x] Task 15: 实现权限 UI
+  - [x] SubTask 15.1: 创建权限检查 Hook
+  - [x] SubTask 15.2: 实现功能级权限控制（隐藏/禁用无权限功能）
+  - [x] SubTask 15.3: 创建项目管理页面（成员管理、角色分配）
+  - [x] SubTask 15.4: 创建用户管理页面（仅管理员可见）
 
 ## Phase 4: 数据迁移
 
-- [ ] Task 16: 数据迁移工具
-  - [ ] SubTask 16.1: 实现本地文件批量上传到 MinIO 脚本
-  - [ ] SubTask 16.2: 实现 LanceDB 向量数据导出脚本
-  - [ ] SubTask 16.3: 实现 Qdrant 向量导入脚本
-  - [ ] SubTask 16.4: 实现 Tauri Store 配置导出/导入工具
-  - [ ] SubTask 16.5: 迁移验证（文件完整性、向量可用性）
+- [x] Task 16: 数据迁移工具
+  - [x] SubTask 16.1: 实现本地文件批量上传到 MinIO 脚本
+  - [x] SubTask 16.2: 实现 LanceDB 向量数据导出脚本
+  - [x] SubTask 16.3: 实现 Qdrant 向量导入脚本
+  - [x] SubTask 16.4: 实现 Tauri Store 配置导出/导入工具
+  - [x] SubTask 16.5: 迁移验证（文件完整性、向量可用性）
 
 ## Phase 5: 网页剪辑器和部署
 
-- [ ] Task 17: 改造 Chrome 网页剪辑器
-  - [ ] SubTask 17.1: 更新扩展 manifest 配置
-  - [ ] SubTask 17.2: 修改为调用云端 API
-  - [ ] SubTask 17.3: 实现用户认证令牌传递
-  - [ ] SubTask 17.4: 实现项目选择器（从服务端获取）
+- [x] Task 17: 改造 Chrome 网页剪辑器
+  - [x] SubTask 17.1: 更新扩展 manifest 配置
+  - [x] SubTask 17.2: 修改为调用云端 API
+  - [x] SubTask 17.3: 实现用户认证令牌传递
+  - [x] SubTask 17.4: 实现项目选择器（从服务端获取）
 
-- [ ] Task 18: 配置部署和 CI/CD
-  - [ ] SubTask 18.1: 完善 Docker Compose 配置
-  - [ ] SubTask 18.2: 配置环境变量管理
-  - [ ] SubTask 18.3: 更新 GitHub Actions CI/CD
-  - [ ] SubTask 18.4: 编写部署文档
+- [x] Task 18: 配置部署和 CI/CD
+  - [x] SubTask 18.1: 完善 Docker Compose 配置
+  - [x] SubTask 18.2: 配置环境变量管理
+  - [x] SubTask 18.3: 更新 GitHub Actions CI/CD
+  - [x] SubTask 18.4: 编写部署文档
 
 ## Phase 6: 测试和优化
 
-- [ ] Task 19: 编写测试
-  - [ ] SubTask 19.1: 后端 API 单元测试
-  - [ ] SubTask 19.2: 后端集成测试
-  - [ ] SubTask 19.3: 前端组件测试
-  - [ ] SubTask 19.4: 端到端测试
+- [x] Task 19: 编写测试
+  - [x] SubTask 19.1: 后端 API 单元测试
+  - [x] SubTask 19.2: 后端集成测试
+  - [x] SubTask 19.3: 前端组件测试
+  - [x] SubTask 19.4: 端到端测试
 
-- [ ] Task 20: 性能优化和安全加固
-  - [ ] SubTask 20.1: 实现 API 速率限制
-  - [ ] SubTask 20.2: 实现请求日志和监控
-  - [ ] SubTask 20.3: 优化数据库查询
-  - [ ] SubTask 20.4: 实现 CORS 配置
-  - [ ] SubTask 20.5: 安全审计（SQL 注入、XSS 等）
+- [x] Task 20: 性能优化和安全加固
+  - [x] SubTask 20.1: 实现 API 速率限制
+  - [x] SubTask 20.2: 实现请求日志和监控
+  - [x] SubTask 20.3: 优化数据库查询
+  - [x] SubTask 20.4: 实现 CORS 配置
+  - [x] SubTask 20.5: 安全审计（SQL 注入、XSS 等）
 
 # Task Dependencies
 

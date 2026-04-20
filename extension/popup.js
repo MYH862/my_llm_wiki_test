@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:19827";
+const DEFAULT_API_URL = "http://localhost:3000/api";
 
 const statusBar = document.getElementById("statusBar");
 const titleInput = document.getElementById("titleInput");
@@ -6,55 +6,89 @@ const urlPreview = document.getElementById("urlPreview");
 const contentPreview = document.getElementById("contentPreview");
 const clipBtn = document.getElementById("clipBtn");
 const projectSelect = document.getElementById("projectSelect");
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsPanel = document.getElementById("settingsPanel");
+const apiInput = document.getElementById("apiInput");
+const tokenInput = document.getElementById("tokenInput");
+const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+const cancelSettingsBtn = document.getElementById("cancelSettingsBtn");
 
 let extractedContent = "";
 let pageUrl = "";
+let projects = [];
+
+async function getSettings() {
+  const result = await chrome.storage.local.get(["apiUrl", "accessToken"]);
+  return {
+    apiUrl: result.apiUrl || DEFAULT_API_URL,
+    accessToken: result.accessToken || "",
+  };
+}
+
+async function saveSettings(settings) {
+  await chrome.storage.local.set(settings);
+}
 
 async function checkConnection() {
+  const settings = await getSettings();
+
+  if (!settings.accessToken) {
+    statusBar.className = "status disconnected";
+    statusBar.textContent = "✗ Not authenticated";
+    clipBtn.disabled = true;
+    projectSelect.innerHTML = '<option value="">Login required</option>';
+    showSettings();
+    return false;
+  }
+
   try {
-    const res = await fetch(`${API_URL}/status`, { method: "GET" });
-    const data = await res.json();
-    if (data.ok) {
+    const res = await fetch(`${settings.apiUrl}/health`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${settings.accessToken}` },
+    });
+
+    if (res.ok) {
       statusBar.className = "status connected";
       statusBar.textContent = "✓ Connected to LLM Wiki";
-      await loadProjects();
+      await loadProjects(settings);
       return true;
     }
   } catch {}
+
   statusBar.className = "status disconnected";
-  statusBar.textContent = "✗ LLM Wiki app is not running";
+  statusBar.textContent = "✗ Cannot connect to server";
   clipBtn.disabled = true;
-  projectSelect.innerHTML = '<option value="">App not running</option>';
+  projectSelect.innerHTML = '<option value="">Connection failed</option>';
   return false;
 }
 
-async function loadProjects() {
+async function loadProjects(settings) {
   try {
-    const res = await fetch(`${API_URL}/projects`, { method: "GET" });
-    const data = await res.json();
-    if (data.ok && data.projects?.length > 0) {
+    const res = await fetch(`${settings.apiUrl}/projects/list`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${settings.accessToken}` },
+    });
+
+    if (res.ok) {
+      projects = await res.json();
       projectSelect.innerHTML = "";
-      for (const proj of data.projects) {
+
+      if (projects.length === 0) {
+        projectSelect.innerHTML = '<option value="">No projects</option>';
+        return;
+      }
+
+      for (const proj of projects) {
         const opt = document.createElement("option");
-        opt.value = proj.path;
-        opt.textContent = proj.name + (proj.current ? " (current)" : "");
-        if (proj.current) opt.selected = true;
+        opt.value = proj.id;
+        opt.textContent = proj.name;
         projectSelect.appendChild(opt);
       }
       return;
     }
   } catch {}
-  // Fallback to current project
-  try {
-    const res = await fetch(`${API_URL}/project`, { method: "GET" });
-    const data = await res.json();
-    if (data.ok && data.path) {
-      const name = data.path.replace(/\\/g, "/").split("/").pop() || data.path;
-      projectSelect.innerHTML = `<option value="${data.path}">${name}</option>`;
-    }
-  } catch {
-    projectSelect.innerHTML = '<option value="">No projects</option>';
-  }
+
+  projectSelect.innerHTML = '<option value="">Failed to load</option>';
 }
 
 async function extractContent() {
@@ -66,18 +100,15 @@ async function extractContent() {
     titleInput.value = tab.title || "Untitled";
     urlPreview.textContent = pageUrl;
 
-    // First inject Readability.js and Turndown.js into the page
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ["Readability.js", "Turndown.js"],
     });
 
-    // Then extract content using them
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: () => {
         try {
-          // Use Readability to extract article content
           const documentClone = document.cloneNode(true);
           const reader = new window.Readability(documentClone);
           const article = reader.parse();
@@ -86,14 +117,12 @@ async function extractContent() {
             return { error: "Readability could not extract content" };
           }
 
-          // Use Turndown to convert HTML to Markdown
           const turndown = new window.TurndownService({
             headingStyle: "atx",
             codeBlockStyle: "fenced",
             bulletListMarker: "-",
           });
 
-          // Add table support
           turndown.addRule("tableCell", {
             filter: ["th", "td"],
             replacement: (content) => ` ${content.trim()} |`,
@@ -105,7 +134,6 @@ async function extractContent() {
           turndown.addRule("table", {
             filter: "table",
             replacement: (content) => {
-              // Add header separator after first row
               const lines = content.trim().split("\n");
               if (lines.length > 0) {
                 const cols = (lines[0].match(/\|/g) || []).length - 1;
@@ -116,7 +144,6 @@ async function extractContent() {
             },
           });
 
-          // Remove images that are tracking pixels or tiny
           turndown.addRule("removeSmallImages", {
             filter: (node) => {
               if (node.nodeName !== "IMG") return false;
@@ -151,7 +178,6 @@ async function extractContent() {
         return;
       }
 
-      // Use Readability's title if better
       if (result.title && result.title.length > 5) {
         titleInput.value = result.title;
       }
@@ -172,7 +198,6 @@ async function extractContent() {
   }
 }
 
-// Fallback: simple DOM extraction if Readability fails
 async function fallbackExtract(tabId) {
   const results = await chrome.scripting.executeScript({
     target: { tabId },
@@ -207,32 +232,47 @@ async function sendClip() {
     return;
   }
 
+  const settings = await getSettings();
+  if (!settings.accessToken) {
+    statusBar.className = "status error";
+    statusBar.textContent = "✗ Not authenticated";
+    showSettings();
+    return;
+  }
+
   clipBtn.disabled = true;
   statusBar.className = "status sending";
   statusBar.textContent = "⏳ Sending to LLM Wiki...";
 
   try {
-    const res = await fetch(`${API_URL}/clip`, {
+    const res = await fetch(`${settings.apiUrl}/ingest/clip`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${settings.accessToken}`,
+      },
       body: JSON.stringify({
+        project_id: selectedProject,
         title: titleInput.value,
         url: pageUrl,
         content: extractedContent,
-        projectPath: selectedProject,
       }),
     });
 
     const data = await res.json();
 
-    if (data.ok) {
+    if (res.ok) {
       const projectName = projectSelect.options[projectSelect.selectedIndex]?.textContent || "project";
       statusBar.className = "status success";
       statusBar.textContent = `✓ Saved to ${projectName}`;
       clipBtn.textContent = "✓ Clipped!";
+      setTimeout(() => {
+        clipBtn.textContent = "📎 Clip to Wiki";
+        clipBtn.disabled = false;
+      }, 2000);
     } else {
       statusBar.className = "status error";
-      statusBar.textContent = `✗ Error: ${data.error}`;
+      statusBar.textContent = `✗ Error: ${data.error || "Unknown error"}`;
       clipBtn.disabled = false;
     }
   } catch (err) {
@@ -242,28 +282,56 @@ async function sendClip() {
   }
 }
 
-clipBtn.addEventListener("click", sendClip);
+function showSettings() {
+  settingsPanel.style.display = "block";
+}
 
-// Resize content preview to fill available space without causing popup scroll
+function hideSettings() {
+  settingsPanel.style.display = "none";
+}
+
+async function handleSaveSettings() {
+  const apiUrl = apiInput.value.trim() || DEFAULT_API_URL;
+  const accessToken = tokenInput.value.trim();
+
+  if (!accessToken) {
+    alert("Please enter your access token");
+    return;
+  }
+
+  await saveSettings({ apiUrl, accessToken });
+  hideSettings();
+  await checkConnection();
+}
+
+clipBtn.addEventListener("click", sendClip);
+settingsBtn.addEventListener("click", showSettings);
+saveSettingsBtn.addEventListener("click", handleSaveSettings);
+cancelSettingsBtn.addEventListener("click", hideSettings);
+
 function resizePreview() {
-  const totalHeight = 500; // matches html/body height
+  const totalHeight = 500;
   const preview = document.getElementById("contentPreview");
   if (!preview) return;
 
-  // Calculate space used by everything except the preview
   const previewRect = preview.getBoundingClientRect();
-  const bottomSpace = totalHeight - previewRect.top - 60; // 60px for button + footer
+  const bottomSpace = totalHeight - previewRect.top - 60;
   const maxH = Math.max(100, Math.min(300, bottomSpace));
   preview.style.maxHeight = maxH + "px";
 }
 
 (async () => {
+  const settings = await getSettings();
+  apiInput.value = settings.apiUrl === DEFAULT_API_URL ? "" : settings.apiUrl;
+  tokenInput.value = settings.accessToken ? "••••••••" : "";
+
   const connected = await checkConnection();
-  // Always extract content so user can preview, even if app not running
   await extractContent();
+
   if (!connected) {
     clipBtn.disabled = true;
-    clipBtn.textContent = "📎 App not running — cannot save";
+    clipBtn.textContent = "📎 Login required — cannot save";
   }
+
   setTimeout(resizePreview, 100);
 })();

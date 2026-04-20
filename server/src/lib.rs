@@ -6,26 +6,40 @@ mod models;
 mod services;
 mod utils;
 
+#[cfg(test)]
+mod tests;
+
 use axum::{routing::get, Router};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
+use tower_http::limit::RequestBodyLimitLayer;
 
 use crate::config::{AppState, AppStateInner, Config};
 use crate::services::file::MinIOService;
 use crate::services::vector::QdrantService;
+use crate::middleware::rate_limit::create_rate_limiter;
 
 pub async fn create_app(state: AppState) -> Router {
-    let cors = CorsLayer::new()
-        .allow_origin(
-            state
-                .config
-                .cors_origins()
-                .into_iter()
-                .map(|o| o.parse().unwrap())
-                .collect::<Vec<_>>(),
-        )
-        .allow_methods(Any)
-        .allow_headers(Any);
+    let cors_origins = state.config.cors_origins();
+    
+    let cors = if cors_origins.iter().any(|o| o == "*") {
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
+    } else {
+        CorsLayer::new()
+            .allow_origin(
+                cors_origins
+                    .into_iter()
+                    .map(|o| o.parse().unwrap())
+                    .collect::<Vec<_>>(),
+            )
+            .allow_methods(Any)
+            .allow_headers(Any)
+    };
+
+    let rate_limiter = create_rate_limiter(10);
 
     let app = Router::new()
         .route("/health", get(health_check))
@@ -44,6 +58,7 @@ pub async fn create_app(state: AppState) -> Router {
         .nest("/api/vector", api::vector::router())
         .layer(cors)
         .layer(TraceLayer::new_for_http())
+        .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024))
         .with_state(state);
 
     app

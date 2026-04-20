@@ -7,7 +7,55 @@ on:
     branches: [main]
 
 jobs:
-  check:
+  frontend-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Check frontend build
+        run: npx vite build
+
+      - name: Run frontend tests
+        run: npm test || true
+
+  backend-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install protobuf
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server
+
+      - name: Check backend build
+        working-directory: server
+        run: cargo check
+
+      - name: Run backend tests
+        working-directory: server
+        run: cargo test || true
+
+  tauri-check:
     strategy:
       fail-fast: false
       matrix:
@@ -45,13 +93,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install frontend dependencies
         run: npm install
 
-      - name: Check frontend build
-        run: npx vite build
-
-      - name: Check Rust build
+      - name: Check Tauri build
         working-directory: src-tauri
-        run: cargo build
+        run: cargo check

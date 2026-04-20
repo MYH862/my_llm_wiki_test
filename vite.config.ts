@@ -36,6 +36,8 @@ export default defineConfig(async () => ({
   },
 
   test: {
-    environment: "node",
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test/setup.ts"],
   },
 }))

@@ -4,6 +4,7 @@ import i18n from "@/i18n"
 import { useWikiStore } from "@/stores/wiki-store"
 import { useReviewStore } from "@/stores/review-store"
 import { useChatStore } from "@/stores/chat-store"
+import { useAuthStore } from "@/stores/auth-store"
 import { listDirectory, openProject } from "@/commands/fs"
 import { getLastProject, getRecentProjects, saveLastProject, loadLlmConfig, loadLanguage, loadSearchApiConfig, loadEmbeddingConfig } from "@/lib/project-store"
 import { loadReviewItems, loadChatHistory } from "@/lib/persist"
@@ -12,6 +13,7 @@ import { startClipWatcher } from "@/lib/clip-watcher"
 import { AppLayout } from "@/components/layout/app-layout"
 import { WelcomeScreen } from "@/components/project/welcome-screen"
 import { CreateProjectDialog } from "@/components/project/create-project-dialog"
+import { AuthRouter } from "@/components/auth/auth-router"
 import type { WikiProject } from "@/types/wiki"
 
 function App() {
@@ -20,8 +22,14 @@ function App() {
   const setFileTree = useWikiStore((s) => s.setFileTree)
   const setSelectedFile = useWikiStore((s) => s.setSelectedFile)
   const setActiveView = useWikiStore((s) => s.setActiveView)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const initializeAuth = useAuthStore((s) => s.initialize)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    initializeAuth()
+  }, [initializeAuth])
 
   // Set up auto-save and clip watcher once on mount
   useEffect(() => {
@@ -155,6 +163,10 @@ function App() {
     setProject(null)
     setFileTree([])
     setSelectedFile(null)
+  }
+
+  if (!isAuthenticated) {
+    return <AuthRouter />
   }
 
   if (loading) {

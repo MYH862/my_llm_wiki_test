@@ -144,6 +144,31 @@
     <button class="btn btn-primary" id="clipBtn" disabled>
       📎 Clip to Wiki
     </button>
+
+    <button class="btn btn-secondary" id="settingsBtn" style="margin-top: 6px; background: #f3f4f6; color: #374151;">
+      ⚙️ Settings
+    </button>
+  </div>
+
+  <div id="settingsPanel" style="display: none; padding: 12px 16px; border-top: 1px solid #e5e7eb; background: #f9fafb;">
+    <div class="field">
+      <label>API URL</label>
+      <input type="text" id="apiInput" placeholder="http://localhost:3000/api">
+    </div>
+
+    <div class="field">
+      <label>Access Token</label>
+      <input type="password" id="tokenInput" placeholder="Enter your JWT token">
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 10px;">
+      <button class="btn btn-primary" id="saveSettingsBtn" style="flex: 1;">
+        Save
+      </button>
+      <button class="btn btn-secondary" id="cancelSettingsBtn" style="flex: 1; background: #f3f4f6; color: #374151;">
+        Cancel
+      </button>
+    </div>
   </div>
 
   <div class="footer">
